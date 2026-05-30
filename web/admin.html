@@ -1419,6 +1419,15 @@
             opacity: 0.4;
         }
 
+        /* 拖拽落点指示线：落在目标行上半→线在上方，下半→线在下方 */
+        .my-playlist-channel.drag-over-top {
+            box-shadow: inset 0 3px 0 0 #1890ff;
+        }
+
+        .my-playlist-channel.drag-over-bottom {
+            box-shadow: inset 0 -3px 0 0 #1890ff;
+        }
+
         .channel-drag-handle {
             margin-right: 8px;
             color: #bbb;
@@ -4530,18 +4539,32 @@ if(success){
         function onChannelDragEnd(event) {
             event.currentTarget.classList.remove('dragging');
             draggedChannelId = null;
-            document.querySelectorAll('.my-playlist-channel.drag-over')
-                .forEach(el => el.classList.remove('drag-over'));
+            clearDropIndicators();
+        }
+
+        // 清除所有落点指示线
+        function clearDropIndicators() {
+            document.querySelectorAll('.my-playlist-channel.drag-over-top, .my-playlist-channel.drag-over-bottom')
+                .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
         }
 
         function onChannelDragOver(event) {
             event.preventDefault();
             event.dataTransfer.dropEffect = 'move';
+            const row = event.currentTarget;
+            clearDropIndicators();
+            // 被拖动的行本身不显示指示线
+            if (!draggedChannelId || row.getAttribute('data-channel-id') === draggedChannelId) return;
+            // 与 onChannelDrop 的插入判定一致：上半插前(线在上)，下半插后(线在下)
+            const rect = row.getBoundingClientRect();
+            const after = (event.clientY - rect.top) > rect.height / 2;
+            row.classList.add(after ? 'drag-over-bottom' : 'drag-over-top');
         }
 
         async function onChannelDrop(event, targetId) {
             event.preventDefault();
             event.stopPropagation();
+            clearDropIndicators();
             if (!draggedChannelId || draggedChannelId === targetId) return;
 
             const group = myPlaylistData[selectedGroupIndex];
