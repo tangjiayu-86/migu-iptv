@@ -2,6 +2,7 @@ services:
   iptv:
     image: akiralereal/iptv:latest              # 使用最新版本镜像
     container_name: iptv                        # 自定义容器名称
+    init: true                                  # 用 init 进程回收 Chromium 退出后的僵尸进程
     ports:
       - "1905:1905"                             # 宿主机:容器端口映射
     environment:

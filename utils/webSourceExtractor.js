@@ -113,9 +113,41 @@ async function extractM3u8FromWeb(url, options = {}) {
     printRed(`提取失败: ${error.message}`)
     return null
   } finally {
-    if (browser) {
-      await browser.close()
+    await closeBrowser(browser)
+  }
+}
+
+/**
+ * 健壮地关闭 Puppeteer 浏览器，避免 Chromium 进程泄漏 / 僵尸进程。
+ * - 给 browser.close() 设超时：无响应的 Chromium 不会卡死整个更新流程
+ *   （update() 已串行化，一次卡死会阻塞后续所有更新）
+ * - 超时或关闭异常时强杀 Chromium 进程组（POSIX 下 puppeteer 以 detached 方式
+ *   启动 chromium，其 pid 即进程组组长），连同 renderer/zygote 子进程一并清理
+ * @param {import('puppeteer').Browser|null} browser
+ */
+async function closeBrowser(browser) {
+  if (!browser) return
+  const proc = browser.process()
+  let timer
+  try {
+    await Promise.race([
+      browser.close(),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('browser.close() 超时')), 10000)
+      })
+    ])
+  } catch (error) {
+    printRed(`关闭浏览器异常，强制结束 Chromium 进程: ${error.message}`)
+    if (proc && proc.pid) {
+      try {
+        // 优先杀整个进程组，回收 renderer/zygote 等子进程
+        process.kill(-proc.pid, 'SIGKILL')
+      } catch (groupErr) {
+        try { proc.kill('SIGKILL') } catch (_) { /* 进程可能已退出 */ }
+      }
     }
+  } finally {
+    clearTimeout(timer)
   }
 }
 
