@@ -3480,6 +3480,7 @@ if(success){
             }
             if (index === 0) return;
             [myPlaylistData[index], myPlaylistData[index - 1]] = [myPlaylistData[index - 1], myPlaylistData[index]];
+            selectedGroupIndex = index - 1; // 选中跟随被移动的分组，便于连续移动
             updateGroupOrder();
             
             // 自动保存配置
@@ -3508,6 +3509,7 @@ if(success){
             }
             if (index === myPlaylistData.length - 1) return;
             [myPlaylistData[index], myPlaylistData[index + 1]] = [myPlaylistData[index + 1], myPlaylistData[index]];
+            selectedGroupIndex = index + 1; // 选中跟随被移动的分组，便于连续移动
             updateGroupOrder();
             
             // 自动保存配置
