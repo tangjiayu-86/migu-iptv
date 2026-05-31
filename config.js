@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from "node:fs"
-import path from "node:path"
+import { dataPath } from "./utils/paths.js"
 
-const SYSTEM_CONFIG_PATH = path.join(process.cwd(), 'system-config.json')
+const SYSTEM_CONFIG_PATH = dataPath('system-config.json')
 
 // 加载系统配置文件
 function loadSystemConfig() {

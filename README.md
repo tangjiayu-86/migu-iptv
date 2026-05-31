@@ -66,6 +66,7 @@ services:
   iptv:
     image: akiralereal/iptv:latest              # 使用最新版本镜像
     container_name: iptv                        # 自定义容器名称
+    init: true                                  # 回收 Chromium 退出后的僵尸进程
     ports:
       - "1905:1905"                             # 宿主机:容器端口映射
     environment:
@@ -73,10 +74,25 @@ services:
       - mtoken=                                 # 可选：咪咕登录令牌（用于高画质/VIP）
       - mport=1905                              # 必须：容器监听端口，与 ports 对应
       - mrateType=4                             # 画质：2=标清，3=高清，4=蓝光(需VIP)
+      - mdataDir=/migu/data                     # 配置/数据持久化目录（对应下方挂载的卷）
       # - mhost=                                  # 可选：外部访问地址（如 http://test.com:1905）
       # - mpass=                                  # 可选：访问密码（设置后访问: http://ip:port/密码/...）
+    volumes:
+      - ./data:/migu/data                       # 持久化配置与生成文件，容器重建/升级镜像后不丢失
     restart: always                             # 容器异常退出后自动重启
 ```
+
+> 💾 **数据持久化（强烈建议）**：上面的 `volumes` + `mdataDir` 会把系统配置、咪咕账号、外部订阅源、我的频道（分组顺序/隐藏/归类/排序）等都存到宿主机的 `./data` 目录。**不挂载的话，`docker compose down`、重建容器或 `docker compose pull` 升级镜像时这些配置会全部丢失、恢复默认。**
+>
+> 若你之前已部署且容器里已有配置，升级前先备份出来再挂卷：
+>
+> ```bash
+> mkdir -p ./data
+> docker cp iptv:/migu/system-config.json ./data/ 2>/dev/null || true
+> docker cp iptv:/migu/my-playlist-config.json ./data/ 2>/dev/null || true
+> docker cp iptv:/migu/external-sources.json ./data/ 2>/dev/null || true
+> # 然后再用带 volumes 的 compose 重新 up -d
+> ```
 
 启动服务：
 
@@ -120,15 +136,20 @@ docker run -d -p 1905:1905 --name iptv akiralereal/iptv:latest
 
 ```bash
 docker run -d -p 1905:1905 \
+  --init \
   -e muserId=你的ID \
   -e mtoken=你的token \
   -e mport=1905 \
   -e mhost="http://192.168.1.100:1905" \
   -e mrateType=4 \
   -e mpass=mypassword \
+  -e mdataDir=/migu/data \
+  -v "$(pwd)/data:/migu/data" \
   --name iptv \
   akiralereal/iptv:latest
 ```
+
+> `--init` 回收 Chromium 僵尸进程；`-v ... -e mdataDir=/migu/data` 持久化配置，升级镜像后不丢失（详见上方「数据持久化」说明）。
 
 ### 🎯 访问服务
 

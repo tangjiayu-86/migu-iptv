@@ -15,3 +15,6 @@ playback.xml
 my-playlist-config.json
 built-in-sources-cache.json
 pe-cache.json
+
+# 持久化数据目录（mdataDir 指向时）
+data/

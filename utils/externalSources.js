@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from "node:fs"
-import path from "node:path"
 import { writeJsonFileSync } from "./fileUtil.js"
+import { dataPath } from "./paths.js"
 import { printBlue, printGreen, printGrey, printRed, printYellow } from "./colorOut.js"
 import { extractM3u8FromWeb, validateM3u8 } from "./webSourceExtractor.js"
 import fetch from 'node-fetch'
@@ -187,7 +187,7 @@ async function fetchAndParseM3u(subscriptionUrl) {
   throw new Error(`所有线路均无法获取订阅，请检查服务器能否访问 GitHub/CDN（必要时配置代理或更换可访问的订阅地址）。已尝试: ${failures.join('，')}`)
 }
 
-const EXTERNAL_SOURCES_PATH = path.join(process.cwd(), 'external-sources.json')
+const EXTERNAL_SOURCES_PATH = dataPath('external-sources.json')
 
 /**
  * 内置订阅源列表：新安装会自动写入，已有配置会在启动时补齐缺失项（按 subscriptionUrl 去重）

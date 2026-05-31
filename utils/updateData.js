@@ -6,9 +6,10 @@ import refreshToken from "./refreshToken.js"
 import { printGreen, printRed, printYellow, printBlue } from "./colorOut.js"
 import { getDateString } from "./time.js"
 import { fetchUrl } from "./net.js"
+import { dataPath } from "./paths.js"
 import { readFileSync, existsSync } from "node:fs"
 
-const PE_CACHE_PATH = `${process.cwd()}/pe-cache.json`
+const PE_CACHE_PATH = dataPath('pe-cache.json')
 
 /**
  * @param {Number} hours -更新小时数
@@ -66,9 +67,9 @@ async function updateTV(hours, options = {}) {
   let datas = await getAllChannels({ skipMigu, useCachedMigu: regenerateOnly })
   printGreen("电视频道-获取成功")
 
-  interfacePath = `${process.cwd()}/interface.txt.bak`
+  interfacePath = dataPath('interface.txt.bak')
   // txt
-  interfaceTXTPath = `${process.cwd()}/interfaceTXT.txt.bak`
+  interfaceTXTPath = dataPath('interfaceTXT.txt.bak')
   // 创建写入空内容
   writeFileSync(interfacePath, "")
   // txt
@@ -90,7 +91,7 @@ async function updateTV(hours, options = {}) {
   // 回放数据：regenerateOnly模式下跳过playback更新
   let playbackFile = ""
   if (!regenerateOnly) {
-    playbackFile = `${process.cwd()}/playback.xml.bak`
+    playbackFile = dataPath('playback.xml.bak')
     writeFileSync(playbackFile,
       `<?xml version="1.0" encoding="UTF-8"?>\n` +
       `<tv generator-info-name="iFansClub" generator-info-url="https://github.com/akiralereal/iPTV">\n`)
@@ -165,11 +166,11 @@ async function updatePE(hours) {
   printGreen("体育直播频道获取成功")
   // console.dir(datas, { depth: null })
 
-  copyFileSync(`${process.cwd()}/interface.txt`, `${process.cwd()}/interface.txt.bak`, 0)
-  copyFileSync(`${process.cwd()}/interfaceTXT.txt`, `${process.cwd()}/interfaceTXT.txt.bak`, 0)
+  copyFileSync(dataPath('interface.txt'), dataPath('interface.txt.bak'), 0)
+  copyFileSync(dataPath('interfaceTXT.txt'), dataPath('interfaceTXT.txt.bak'), 0)
 
-  const interfacePath = `${process.cwd()}/interface.txt.bak`
-  const interfaceTXTPath = `${process.cwd()}/interfaceTXT.txt.bak`
+  const interfacePath = dataPath('interface.txt.bak')
+  const interfaceTXTPath = dataPath('interfaceTXT.txt.bak')
 
   printYellow("开始更新体育直播频道...")
 
@@ -291,10 +292,10 @@ async function runUpdate(hours, options = {}) {
       try {
         const cache = JSON.parse(readFileSync(PE_CACHE_PATH, 'utf-8'))
         if (cache.m3u) {
-          appendFileSync(`${process.cwd()}/interface.txt`, cache.m3u)
+          appendFileSync(dataPath('interface.txt'), cache.m3u)
         }
         if (cache.txt) {
-          appendFileSync(`${process.cwd()}/interfaceTXT.txt`, cache.txt)
+          appendFileSync(dataPath('interfaceTXT.txt'), cache.txt)
         }
         printGreen(`快速模式：已从缓存恢复体育赛事频道（${cache.updatedAt || '时间未知'}）`)
       } catch (e) {

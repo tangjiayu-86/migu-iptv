@@ -1,5 +1,6 @@
 import { get302URL, getAndroidURL, getAndroidURL720p, printLoginInfo } from "./androidURL.js";
 import { readFileSync } from "./fileUtil.js";
+import { dataPath } from "./paths.js";
 import { host, pass, rateType, token, userId } from "../config.js";
 import { printDebug, printGreen, printGrey, printRed, printYellow } from "./colorOut.js";
 import { readConfig, parseInterfaceTxt, applyConfig, generateM3u8, generateTxt } from "./playlistConfig.js";
@@ -13,15 +14,15 @@ function interfaceStr(url, headers, urlUserId, urlToken) {
     content: null,
     contentType: 'text/plain;charset=UTF-8'
   }
-  let fileName = process.cwd() + "/interface.txt"
+  let fileName = dataPath("interface.txt")
   switch (url) {
     case "/playback.xml":
-      fileName = process.cwd() + "/playback.xml"
+      fileName = dataPath("playback.xml")
       result.contentType = "text/xml;charset=UTF-8"
       break;
 
     case "/txt":
-      fileName = process.cwd() + "/interfaceTXT.txt"
+      fileName = dataPath("interfaceTXT.txt")
       break;
 
     case "/m3u":

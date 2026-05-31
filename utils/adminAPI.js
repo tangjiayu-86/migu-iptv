@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs"
 import { getAllChannels, externalSourceManager, builtInSourceManager } from "./channelMerger.js"
 import { BUILT_IN_SUBSCRIPTIONS } from "./externalSources.js"
+import { dataPath } from "./paths.js"
 import update from "./updateData.js"
 
 /**
@@ -8,7 +9,7 @@ import update from "./updateData.js"
  */
 function parsePEChannels() {
   try {
-    const interfacePath = `${process.cwd()}/interface.txt`
+    const interfacePath = dataPath('interface.txt')
     if (!existsSync(interfacePath)) {
       return []
     }

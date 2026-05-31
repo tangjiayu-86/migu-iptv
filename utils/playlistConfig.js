@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto"
 import { readFileSync, existsSync } from "node:fs"
 import { writeJsonFileSync } from "./fileUtil.js"
+import { dataPath } from "./paths.js"
 import { printBlue, printGreen, printYellow, printRed } from "./colorOut.js"
 
-const CONFIG_PATH = `${process.cwd()}/my-playlist-config.json`
+const CONFIG_PATH = dataPath('my-playlist-config.json')
 
 /**
  * 默认配置
@@ -80,7 +81,7 @@ export function saveConfig(config) {
  */
 export function parseInterfaceTxt() {
   try {
-    const interfacePath = `${process.cwd()}/interface.txt`
+    const interfacePath = dataPath('interface.txt')
     if (!existsSync(interfacePath)) {
       printYellow("interface.txt 不存在")
       return []

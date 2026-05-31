@@ -1,9 +1,9 @@
 import { readFileSync, existsSync } from "node:fs"
-import path from "node:path"
 import { writeJsonFileSync } from "./fileUtil.js"
+import { dataPath } from "./paths.js"
 import { reloadConfig, sanitizeSegment } from "../config.js"
 
-const SYSTEM_CONFIG_PATH = path.join(process.cwd(), 'system-config.json')
+const SYSTEM_CONFIG_PATH = dataPath('system-config.json')
 
 /**
  * 获取系统配置

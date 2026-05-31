@@ -1,5 +1,6 @@
 import { readFileSync, existsSync } from "node:fs"
 import { writeJsonFileSync } from "./fileUtil.js"
+import { dataPath } from "./paths.js"
 import { printBlue, printGreen, printYellow, printRed } from "./colorOut.js"
 import { extractM3u8FromWeb } from "./webSourceExtractor.js"
 
@@ -13,8 +14,8 @@ import { extractM3u8FromWeb } from "./webSourceExtractor.js"
  */
 class BuiltInSourceManager {
   constructor() {
-    this.configPath = `${process.cwd()}/built-in-sources.json`
-    this.cachePath = `${process.cwd()}/built-in-sources-cache.json`
+    this.configPath = `${process.cwd()}/built-in-sources.json` // 随镜像分发的只读配置，留在代码目录
+    this.cachePath = dataPath('built-in-sources-cache.json')   // 运行时抓取缓存，持久化到数据目录
     this.sources = { enabled: true, sources: [] }
     this.cache = {} // { sourceId: { m3u8Url, lastUpdate } }
     this.loadConfig()
