@@ -1,7 +1,11 @@
 import { readFileSync, existsSync } from "node:fs"
 import { writeJsonFileSync } from "./fileUtil.js"
 import { dataPath } from "./paths.js"
-import { reloadConfig, sanitizeSegment } from "../config.js"
+import {
+  reloadConfig, sanitizeSegment,
+  userId, token, port, host, rateType, pass,
+  enableHDR, enableH265, programInfoUpdateInterval, refreshToken, adminPath
+} from "../config.js"
 
 const SYSTEM_CONFIG_PATH = dataPath('system-config.json')
 
@@ -10,30 +14,24 @@ const SYSTEM_CONFIG_PATH = dataPath('system-config.json')
  */
 export function getSystemConfigAPI() {
   try {
-    if (!existsSync(SYSTEM_CONFIG_PATH)) {
-      // 返回默认配置
-      return {
-        success: true,
-        data: {
-          userId: "",
-          token: "",
-          port: 1905,
-          host: "",
-          rateType: 3,
-          pass: "",
-          enableHDR: true,
-          enableH265: true,
-          programInfoUpdateInterval: "8",
-          refreshToken: true,
-          adminPath: "admin"
-        }
-      }
-    }
-    
-    const config = JSON.parse(readFileSync(SYSTEM_CONFIG_PATH, 'utf-8'))
+    // 返回「实际生效」的配置：config.js 已把 system-config.json + 环境变量 + 默认值 解析合并。
+    // 这样无论 id/token 等是用环境变量(muserId/mtoken…)还是配置文件设置的，
+    // 管理页表单都能正确显示当前生效值（修复换电脑/无浏览器自动填充时表单显示为空的问题）。
     return {
       success: true,
-      data: config
+      data: {
+        userId,
+        token,
+        port: parseInt(port) || 1905,
+        host,
+        rateType: parseInt(rateType) || 3,
+        pass,
+        enableHDR,
+        enableH265,
+        programInfoUpdateInterval,
+        refreshToken,
+        adminPath
+      }
     }
   } catch (error) {
     return {
