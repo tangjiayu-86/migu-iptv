@@ -20,11 +20,14 @@ import { GITHUB_RAW_MIRRORS, isBuiltInSubscriptionSource } from "./utils/externa
 var hours = 0
 
 // 读取请求体（Promise 化，避免回调式写法导致的释放/死锁问题）
+// 注意：必须先把所有 Buffer 块拼接、再整体按 UTF-8 解码。
+// 旧写法 `body += chunk` 是逐块 toString，当一个多字节汉字被拆在两个 TCP 数据块
+// 边界时，两半各自解码会变成乱码（如「咪」→「���」）——自定义分组名含中文且配置体较大时必现。
 function readBody(req) {
   return new Promise((resolve, reject) => {
-    let body = ''
-    req.on('data', chunk => { body += chunk })
-    req.on('end', () => resolve(body))
+    const chunks = []
+    req.on('data', chunk => { chunks.push(chunk) })
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
     req.on('error', reject)
   })
 }
