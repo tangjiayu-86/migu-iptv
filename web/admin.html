@@ -3784,7 +3784,7 @@ if(success){
                 
                 // 根据批量模式显示不同的操作按钮
                 if (isBatchMode && group.isPartialDelete) {
-                    // 批量模式，仅对包含隐藏频道的分组显示
+                    // 部分隐藏分组 · 批量：恢复选中
                     const selectedCount = selectedChannels.size;
                     actions.innerHTML = `
                         <button class="btn btn-sm" onclick="selectAllChannels()">全选</button>
@@ -3792,15 +3792,33 @@ if(success){
                         <button class="btn btn-success btn-sm" onclick="restoreSelectedChannels()" ${selectedCount === 0 ? 'disabled' : ''}>恢复选中 (${selectedCount})</button>
                         <button class="btn btn-primary btn-sm" onclick="toggleBatchMode()">退出批量</button>
                     `;
+                } else if (isBatchMode) {
+                    // 完整隐藏分组 · 批量：把选中频道移到可见分组（从隐藏组里捞出来，无需先恢复整组）
+                    const selectedCount = selectedChannels.size;
+                    const moveOpts = myPlaylistData.map(g => {
+                        const v = String(g.name).replace(/"/g, '&quot;');
+                        return `<option value="${v}">${g.name}</option>`;
+                    }).join('');
+                    actions.innerHTML = `
+                        <button class="btn btn-sm" onclick="selectAllChannels()">全选</button>
+                        <button class="btn btn-sm" onclick="deselectAllChannels()">取消全选</button>
+                        <span style="margin-left: 6px; color: #555; font-size: 13px;">移动选中到</span>
+                        <select id="hiddenMoveSelect" style="padding: 3px 6px; border-radius: 4px; border: 1px solid #ddd; max-width: 160px;" ${selectedCount === 0 ? 'disabled' : ''}>${moveOpts}</select>
+                        <button class="btn btn-success btn-sm" onclick="moveSelectedFromHidden()" ${selectedCount === 0 ? 'disabled' : ''}>移动 (${selectedCount})</button>
+                        <button class="btn btn-primary btn-sm" onclick="toggleBatchMode()">退出批量</button>
+                    `;
                 } else if (group.isPartialDelete) {
-                    // 非批量模式，包含隐藏频道的分组
+                    // 部分隐藏分组 · 非批量
                     actions.innerHTML = `
                         <button class="btn btn-primary btn-sm" onclick="restoreAllChannelsInGroup()">恢复所有频道</button>
                         <button class="btn btn-primary btn-sm" onclick="toggleBatchMode()">批量管理</button>
                     `;
                 } else {
-                    // 被隐藏的完整分组
-                    actions.innerHTML = '<button class="btn btn-primary btn-sm" onclick="restoreGroup()">恢复分组</button>';
+                    // 完整隐藏分组 · 非批量：恢复整组，或进批量把个别频道移出去（不必先恢复整组）
+                    actions.innerHTML = `
+                        <button class="btn btn-primary btn-sm" onclick="restoreGroup()">恢复分组</button>
+                        <button class="btn btn-primary btn-sm" onclick="toggleBatchMode()">批量移动频道</button>
+                    `;
                 }
 
                 // 对于被隐藏的完整分组，不显示单个频道的恢复按钮
@@ -3809,9 +3827,9 @@ if(success){
                     <div class="my-playlist-channels">
                         ${group.channels.map(channel => `
                             <div class="my-playlist-channel deleted ${isBatchMode ? 'batch-mode' : ''}" data-channel-id="${channel.id}">
-                                ${isBatchMode && group.isPartialDelete ? `
-                                    <input type="checkbox" class="my-playlist-channel-checkbox" 
-                                           onchange="toggleChannelSelection('${channel.id}')" 
+                                ${isBatchMode ? `
+                                    <input type="checkbox" class="my-playlist-channel-checkbox"
+                                           onchange="toggleChannelSelection('${channel.id}')"
                                            ${selectedChannels.has(channel.id) ? 'checked' : ''}>
                                 ` : ''}
                                 <div class="my-playlist-channel-name" title="点击查看详情：${channel.name}" onclick="showChannelDetail('${channel.id}', true)" style="cursor: pointer;">
@@ -4790,6 +4808,50 @@ if(success){
             } catch (error) {
                 console.error('恢复频道失败:', error);
                 showStatus('恢复失败: ' + error.message, 'error');
+            }
+        }
+
+        // 把「完整隐藏分组」里选中的频道移到某个可见分组（channelGroupMap 的 movedTo 会让其脱离隐藏组、出现在目标组）
+        // 无需先恢复整组——选 1 个=单独移、选多个=批量移
+        async function moveSelectedFromHidden() {
+            if (selectedChannels.size === 0 || !isViewingDeleted) return;
+            const sel = document.getElementById('hiddenMoveSelect');
+            if (!sel || !sel.value) return;
+            const target = sel.value;
+            // 定位当前查看的隐藏分组（与 restoreSelectedChannels 同逻辑）
+            const isGroupDeletedCheck = (groupName) => myPlaylistConfig.deletedGroups.some(p =>
+                p.endsWith('*') ? groupName.startsWith(p.slice(0, -1)) : p === groupName);
+            const deletedGroupsList = myPlaylistOriginalData.filter(g => isGroupDeletedCheck(g.name));
+            const hiddenGroupsList = myPlaylistOriginalData.map(g => {
+                const hc = g.channels.filter(ch =>
+                    myPlaylistConfig.hiddenChannels.includes(`${g.name}::${ch.id}`) && !isGroupDeletedCheck(g.name));
+                return hc.length > 0 ? { ...g, channels: hc, isPartialDelete: true } : null;
+            }).filter(Boolean);
+            const currentGroup = [...deletedGroupsList, ...hiddenGroupsList][selectedGroupIndex];
+            if (!currentGroup) return;
+
+            if (!myPlaylistConfig.channelGroupMap) myPlaylistConfig.channelGroupMap = {};
+            const n = selectedChannels.size;
+            selectedChannels.forEach(channelId => {
+                myPlaylistConfig.channelGroupMap[`${currentGroup.name}::${channelId}`] = target;
+            });
+            try {
+                const response = await fetch(mpConfigUrl(), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(myPlaylistConfig)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    selectedChannels.clear();
+                    isBatchMode = false;
+                    await loadMyPlaylist(false);
+                    showStatus(`已移动 ${n} 个频道到「${target}」`, 'success');
+                } else {
+                    showStatus('移动失败', 'error');
+                }
+            } catch (error) {
+                showStatus('移动失败: ' + error.message, 'error');
             }
         }
 
